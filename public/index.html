@@ -31,14 +31,18 @@
       </form>
 
       <h2>Participantes</h2>
+      <p>Total de participantes: <span id="totalParticipantes">0</span></p>
+
       <table id="tabelaParticipantes">
         <thead>
           <tr>
+            <th>ID</th>
             <th>Nome</th>
+            <th>Vai correr em Almenara?</th>
             <th>Modalidade</th>
-            <th>Vai correr em almenara?</th>
           </tr>
         </thead>
+
         <tbody></tbody>
       </table>
     </div>
@@ -83,16 +87,24 @@
 
       db.ref("participantes").on("value", (snapshot) => {
         tabela.innerHTML = "";
+        let contador = 1;
+        let total = 0;
+
         snapshot.forEach((child) => {
           const p = child.val();
           const row = document.createElement("tr");
           row.innerHTML = `
-          <td>${p.nome}</td>
-          <td>${p.modalidade}</td>
-          <td>${p.confirmado}</td>
-        `;
+      <td>${contador}</td>
+      <td>${p.nome}</td>
+      <td>${p.confirmado}</td>
+      <td>${p.modalidade}</td>
+    `;
           tabela.appendChild(row);
+          contador++;
+          total++;
         });
+
+        document.getElementById("totalParticipantes").textContent = total;
       });
     </script>
   </body>
