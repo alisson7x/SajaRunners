@@ -48,64 +48,100 @@
     </div>
 
     <script>
-      // Firebase config (copie do Firebase Console)
       const firebaseConfig = {
         apiKey: "SUA_API_KEY",
-        authDomain: "saja-runner.firebaseapp.com",
-        databaseURL: "https://saja-runner-default-rtdb.firebaseio.com",
-        projectId: "saja-runner",
-        storageBucket: "saja-runner.appspot.com",
+        authDomain: "seu projeto",
+        databaseURL: "link do seu projeto no firebase",
+        projectId: "....",
+        storageBucket: ".......",
         messagingSenderId: "SEU_SENDER_ID",
         appId: "SEU_APP_ID",
       };
-
+    
       firebase.initializeApp(firebaseConfig);
       const db = firebase.database();
-
+    
       const form = document.getElementById("cadastroForm");
       const tabela = document.querySelector("#tabelaParticipantes tbody");
-
+    
+      // Remove acentos e formata o nome
+      function formatarNome(nome) {
+        const semAcentos = nome.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+        return semAcentos
+          .toLowerCase()
+          .split(" ")
+          .filter(p => p.length > 0)
+          .map(p => p.charAt(0).toUpperCase() + p.slice(1))
+          .join(" ");
+      }
+    
+      function carregarParticipantes() {
+        db.ref("participantes").on("value", (snapshot) => {
+          tabela.innerHTML = "";
+          let contador = 1;
+          let total = 0;
+    
+          snapshot.forEach((child) => {
+            const p = child.val();
+            const row = document.createElement("tr");
+            row.innerHTML = `
+              <td>${contador}</td>
+              <td>${p.nome}</td>
+              <td>${p.confirmado}</td>
+              <td>${p.modalidade}</td>
+            `;
+            tabela.appendChild(row);
+            contador++;
+            total++;
+          });
+    
+          document.getElementById("totalParticipantes").textContent = total;
+        });
+      }
+    
       form.addEventListener("submit", (e) => {
         e.preventDefault();
-
-        const participante = {
-          nome: document.getElementById("nome").value,
-          modalidade: document.getElementById("modalidade").value,
-          confirmado: document.getElementById("confirmado").value,
-        };
-
-        db.ref("participantes")
-          .push(participante)
-          .then(() => {
-            alert("✅ Inscrição realizada com sucesso!");
-            form.reset();
-          })
-          .catch((error) => {
-            alert("❌ Erro ao cadastrar: " + error.message);
+    
+        const nomeBruto = document.getElementById("nome").value;
+        const nomeFormatado = formatarNome(nomeBruto);
+        const modalidade = document.getElementById("modalidade").value;
+        const confirmado = document.getElementById("confirmado").value;
+    
+        db.ref("participantes").once("value", (snapshot) => {
+          let nomeDuplicado = false;
+    
+          snapshot.forEach((child) => {
+            const nomeSalvo = formatarNome(child.val().nome || "");
+            if (nomeSalvo === nomeFormatado) {
+              nomeDuplicado = true;
+            }
           });
-      });
-
-      db.ref("participantes").on("value", (snapshot) => {
-        tabela.innerHTML = "";
-        let contador = 1;
-        let total = 0;
-
-        snapshot.forEach((child) => {
-          const p = child.val();
-          const row = document.createElement("tr");
-          row.innerHTML = `
-      <td>${contador}</td>
-      <td>${p.nome}</td>
-      <td>${p.confirmado}</td>
-      <td>${p.modalidade}</td>
-    `;
-          tabela.appendChild(row);
-          contador++;
-          total++;
+    
+          if (nomeDuplicado) {
+            alert("❌ Esse nome já foi cadastrado!");
+            return;
+          }
+    
+          const novoParticipante = {
+            nome: nomeFormatado,
+            modalidade,
+            confirmado
+          };
+    
+          db.ref("participantes")
+            .push(novoParticipante)
+            .then(() => {
+              alert("✅ Inscrição realizada com sucesso!");
+              form.reset();
+            })
+            .catch((error) => {
+              alert("❌ Erro ao cadastrar: " + error.message);
+            });
         });
-
-        document.getElementById("totalParticipantes").textContent = total;
       });
+    
+      carregarParticipantes();
     </script>
+           
   </body>
 </html>
